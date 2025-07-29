@@ -586,6 +586,149 @@
             background: linear-gradient(90deg, #eec9d2 0%, #a1589e 100%);
             color: #fff;
         }
+        
+        /* Modal للصور */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .image-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .image-modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            text-align: center;
+        }
+        
+        .image-modal img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 12px;
+            border: 4px solid #eec9d2;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+        
+        .image-modal img.zoomed {
+            transform: scale(1.5);
+            cursor: zoom-out;
+            max-width: none;
+            max-height: none;
+        }
+        
+        .image-modal-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .image-modal-close:hover {
+            background: #cc3333;
+        }
+        
+        .image-modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .image-modal-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .image-modal-prev {
+            left: 20px;
+        }
+        
+        .image-modal-next {
+            right: 20px;
+        }
+        
+        .image-modal-counter {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        
+        /* تحسينات للأجهزة المحمولة */
+        @media (max-width: 768px) {
+            .image-modal-nav {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .image-modal-prev {
+                left: 10px;
+            }
+            
+            .image-modal-next {
+                right: 10px;
+            }
+            
+            .image-modal-close {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+                top: -40px;
+            }
+            
+            .image-modal-counter {
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -654,6 +797,18 @@
         </svg>
     </button>
     <div id="addToCartMsg" class="add-to-cart-msg"></div>
+    
+    <!-- Modal للصور -->
+    <div id="imageModal" class="image-modal">
+        <div class="image-modal-content">
+            <button class="image-modal-close" onclick="closeImageModal()">×</button>
+            <button class="image-modal-nav image-modal-prev" onclick="changeModalImage(-1)">‹</button>
+            <button class="image-modal-nav image-modal-next" onclick="changeModalImage(1)">›</button>
+            <img id="modalImage" src="" alt="صورة المنتج">
+            <div class="image-modal-counter" id="modalCounter"></div>
+        </div>
+    </div>
+    
     <div class="container" id="mainContainer">
         <!-- المحتوى يتغير هنا -->
     </div>
@@ -665,6 +820,10 @@
             <button id="adminLoginBtn">Login</button>
             <div class="error" id="adminLoginError"></div>
         </div>
+    </div>
+    <!-- Loader متحرك -->
+    <div id="mainLoader" style="display:none;position:fixed;z-index:15000;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.7);align-items:center;justify-content:center;">
+        <div style="border:8px solid #eec9d2;border-top:8px solid #a1589e;border-radius:50%;width:70px;height:70px;animation:spin 1s linear infinite;"></div>
     </div>
     <script>
         // --- Firebase config ---
@@ -722,6 +881,7 @@
         updateFavoritesCount();
         // جلب المنتجات من قاعدة البيانات وتحديثها تلقائياً
         function listenToProducts() {
+            showMainLoader();
             db.ref('gymProducts').on('value', snapshot => {
                 const val = snapshot.val() || [];
                 // إذا كانت البيانات ككائن (مفتاح تلقائي)، حولها لمصفوفة
@@ -735,6 +895,7 @@
                 renderProductsSection(activeSection);
                 // إذا كنا في لوحة الأدمن، حدث القائمة
                 if (document.getElementById('adminProductsList')) renderAdminProductsList();
+                hideMainLoader();
             });
         }
         listenToProducts();
@@ -745,22 +906,93 @@
         }
 
         // --- سلايدر الصور وتكبيرها ---
-        function showImageModal(src) {
-            let modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = 0;
-            modal.style.left = 0;
-            modal.style.right = 0;
-            modal.style.bottom = 0;
-            modal.style.background = 'rgba(0,0,0,0.85)';
-            modal.style.display = 'flex';
-            modal.style.alignItems = 'center';
-            modal.style.justifyContent = 'center';
-            modal.style.zIndex = 2000;
-            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ec35e3;z-index:20000000000;'>`;
-            modal.onclick = () => document.body.removeChild(modal);
-            document.body.appendChild(modal);
+        let currentModalImages = [];
+        let currentModalIndex = 0;
+        
+        function showImageModal(src, images = null, startIndex = 0) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalCounter = document.getElementById('modalCounter');
+            
+            if (images && images.length > 0) {
+                currentModalImages = images;
+                currentModalIndex = startIndex;
+                modalImage.src = images[startIndex];
+                modalCounter.textContent = `${startIndex + 1} / ${images.length}`;
+                modalCounter.style.display = 'block';
+                
+                // إظهار/إخفاء أزرار التنقل
+                const prevBtn = document.querySelector('.image-modal-prev');
+                const nextBtn = document.querySelector('.image-modal-next');
+                prevBtn.style.display = startIndex > 0 ? 'flex' : 'none';
+                nextBtn.style.display = startIndex < images.length - 1 ? 'flex' : 'none';
+            } else {
+                currentModalImages = [src];
+                currentModalIndex = 0;
+                modalImage.src = src;
+                modalCounter.style.display = 'none';
+                
+                // إخفاء أزرار التنقل
+                document.querySelector('.image-modal-prev').style.display = 'none';
+                document.querySelector('.image-modal-next').style.display = 'none';
+            }
+            
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // منع التمرير
         }
+        
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = ''; // إعادة التمرير
+        }
+        
+        function changeModalImage(direction) {
+            if (currentModalImages.length <= 1) return;
+            
+            currentModalIndex = (currentModalIndex + direction + currentModalImages.length) % currentModalImages.length;
+            const modalImage = document.getElementById('modalImage');
+            const modalCounter = document.getElementById('modalCounter');
+            
+            modalImage.src = currentModalImages[currentModalIndex];
+            modalCounter.textContent = `${currentModalIndex + 1} / ${currentModalImages.length}`;
+            
+            // تحديث أزرار التنقل
+            const prevBtn = document.querySelector('.image-modal-prev');
+            const nextBtn = document.querySelector('.image-modal-next');
+            prevBtn.style.display = currentModalIndex > 0 ? 'flex' : 'none';
+            nextBtn.style.display = currentModalIndex < currentModalImages.length - 1 ? 'flex' : 'none';
+        }
+        
+        // إغلاق الـ modal عند الضغط خارج الصورة
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+        
+        // إغلاق الـ modal عند الضغط على ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+        
+        // إضافة إمكانية التكبير بالضغط على الصورة
+        document.getElementById('modalImage').addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('zoomed');
+        });
+        
+        // إضافة إمكانية التكبير بالضغط على Z
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'z' || e.key === 'Z') {
+                const modalImage = document.getElementById('modalImage');
+                if (modalImage) {
+                    modalImage.classList.toggle('zoomed');
+                }
+            }
+        });
         // --- حساب نسبة الخصم ---
         function getDiscountPercent(before, after) {
             before = parseFloat(before); after = parseFloat(after);
@@ -771,6 +1003,7 @@
         // لم يعد هناك حاجة لـ localStorage، سنستخدم saveProductsToDB بدلاً منها
         // --- تعديل عرض المنتجات لإظهار القلب ---
         function renderProductsSection(typeKey) {
+            showMainLoader();
             const container = document.getElementById('mainContainer');
             const type = productTypes.find(t => t.key === typeKey);
             // المنتجات غير المخفية فقط + البحث
@@ -796,12 +1029,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images || [])}, 0)'>`;
                     }
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
@@ -833,6 +1066,7 @@
                 html += `</div>`;
             }
             container.innerHTML = html;
+            hideMainLoader();
         }
         // --- سلايدر الصور ---
         window.changeSlide = function(btn, filteredIdx, dir) {
@@ -853,10 +1087,12 @@
             let current = parseInt(img.getAttribute('data-slider-idx')) || 0;
             current = (current + dir + prod.images.length) % prod.images.length;
             img.src = prod.images[current];
-            img.setAttribute('onclick', `showImageModal("${prod.images[current]}")`);
+            img.setAttribute('onclick', `showImageModal("${prod.images[current]}", ${JSON.stringify(prod.images)}, ${current})`);
             img.setAttribute('data-slider-idx', current);
         }
         window.showImageModal = showImageModal;
+        window.closeImageModal = closeImageModal;
+        window.changeModalImage = changeModalImage;
         // نافذة تسجيل دخول الأدمن
         function showAdminLogin() {
             document.getElementById('adminLoginModal').style.display = 'flex';
@@ -1149,7 +1385,7 @@
                     ondragend='onAdminProductDragEnd(event)'
                     style='opacity:1;transition:opacity 0.2s;'>
                     <span class='drag-handle' style='cursor:grab;font-size:2rem;color:#ffb300;user-select:none;margin-right:8px;' title='اسحب للترتيب'>☰</span>
-                    <img src="${prod.images[0] || ''}" alt="صورة المنتج" style="cursor:pointer;" onclick="showImageModal('${prod.images[0]}')">
+                    <img src="${prod.images[0] || ''}" alt="صورة المنتج" style="cursor:pointer;" onclick="showImageModal('${prod.images[0]}', ${JSON.stringify(prod.images || [])}, 0)">
                     <div class='product-info'>
                         <div class='product-title'>${prod.name}</div>
                         <div class='product-desc'>${prod.desc}</div>
@@ -1261,6 +1497,12 @@
             whatsappBtn.onclick = function() {
                 window.open('https://wa.me/201159768514', '_blank');
             };
+        }
+        function showMainLoader() {
+            document.getElementById('mainLoader').style.display = 'flex';
+        }
+        function hideMainLoader() {
+            document.getElementById('mainLoader').style.display = 'none';
         }
     </script>
     <!-- Splash Screen Animation -->
@@ -1638,12 +1880,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer; colo' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer; colo' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images || [])}, 0)'>`;
                     }
                     let fav = isFavorite(prod);
                     let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
