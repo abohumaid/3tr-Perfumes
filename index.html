@@ -745,224 +745,20 @@
         }
 
         // --- سلايدر الصور وتكبيرها ---
-        function showImageModal(src, imagesArr = null, startIdx = 0) {
-            // إذا لم يتم تمرير مصفوفة الصور، استخدم صورة واحدة فقط
-            let images = imagesArr && imagesArr.length ? imagesArr : [src];
-            let currentIdx = imagesArr ? startIdx : 0;
-            
-            // احذف أي مودال سابق
-            let oldModal = document.getElementById('imageModalPopup');
-            if (oldModal) document.body.removeChild(oldModal);
-            
-            // أنشئ المودال
+        function showImageModal(src) {
             let modal = document.createElement('div');
-            modal.id = 'imageModalPopup';
             modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.right = '0';
-            modal.style.bottom = '0';
-            modal.style.background = 'rgba(0,0,0,0.9)';
+            modal.style.top = 0;
+            modal.style.left = 0;
+            modal.style.right = 0;
+            modal.style.bottom = 0;
+            modal.style.background = 'rgba(0,0,0,0.85)';
             modal.style.display = 'flex';
             modal.style.alignItems = 'center';
             modal.style.justifyContent = 'center';
-            modal.style.zIndex = '999999';
-            modal.style.flexDirection = 'column';
-            
-            // محتوى الصورة
-            let content = document.createElement('div');
-            content.style.position = 'relative';
-            content.style.display = 'flex';
-            content.style.flexDirection = 'column';
-            content.style.alignItems = 'center';
-            content.style.justifyContent = 'center';
-            content.style.maxWidth = '95vw';
-            content.style.maxHeight = '90vh';
-            content.style.margin = '0 auto';
-            
-            // حاوية الصورة مع الأزرار
-            let imgContainer = document.createElement('div');
-            imgContainer.style.position = 'relative';
-            imgContainer.style.display = 'inline-block';
-            
-            // الصورة
-            let img = document.createElement('img');
-            img.src = images[currentIdx];
-            img.style.maxWidth = '90vw';
-            img.style.maxHeight = '75vh';
-            img.style.borderRadius = '12px';
-            img.style.border = '4px solid #ec35e3';
-            img.style.background = '#fff';
-            img.style.display = 'block';
-            img.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
-            img.style.objectFit = 'contain';
-            
-            // أزرار يمين/يسار
-            if (images.length > 1) {
-                let leftBtn = document.createElement('button');
-                leftBtn.innerHTML = '‹';
-                leftBtn.style.position = 'absolute';
-                leftBtn.style.left = '15px';
-                leftBtn.style.top = '50%';
-                leftBtn.style.transform = 'translateY(-50%)';
-                leftBtn.style.background = 'rgba(0,0,0,0.7)';
-                leftBtn.style.color = '#fc03ef';
-                leftBtn.style.border = '2px solid #fc03ef';
-                leftBtn.style.fontSize = '2.5rem';
-                leftBtn.style.cursor = 'pointer';
-                leftBtn.style.borderRadius = '50%';
-                leftBtn.style.width = '50px';
-                leftBtn.style.height = '50px';
-                // تحسين للأجهزة الصغيرة
-                if (window.innerWidth <= 768) {
-                    leftBtn.style.width = '40px';
-                    leftBtn.style.height = '40px';
-                    leftBtn.style.fontSize = '1.8rem';
-                    leftBtn.style.left = '10px';
-                }
-                leftBtn.style.display = 'flex';
-                leftBtn.style.alignItems = 'center';
-                leftBtn.style.justifyContent = 'center';
-                leftBtn.style.zIndex = '2';
-                leftBtn.style.transition = 'all 0.2s ease';
-                leftBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-                leftBtn.onmouseover = function() {
-                    this.style.background = 'rgba(252,3,239,0.3)';
-                    this.style.transform = 'translateY(-50%) scale(1.1)';
-                };
-                leftBtn.onmouseout = function() {
-                    this.style.background = 'rgba(0,0,0,0.7)';
-                    this.style.transform = 'translateY(-50%) scale(1)';
-                };
-                leftBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    currentIdx = (currentIdx - 1 + images.length) % images.length;
-                    img.src = images[currentIdx];
-                    counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                };
-                
-                let rightBtn = document.createElement('button');
-                rightBtn.innerHTML = '›';
-                rightBtn.style.position = 'absolute';
-                rightBtn.style.right = '15px';
-                rightBtn.style.top = '50%';
-                rightBtn.style.transform = 'translateY(-50%)';
-                rightBtn.style.background = 'rgba(0,0,0,0.7)';
-                rightBtn.style.color = '#fc03ef';
-                rightBtn.style.border = '2px solid #fc03ef';
-                rightBtn.style.fontSize = '2.5rem';
-                rightBtn.style.cursor = 'pointer';
-                rightBtn.style.borderRadius = '50%';
-                rightBtn.style.width = '50px';
-                rightBtn.style.height = '50px';
-                // تحسين للأجهزة الصغيرة
-                if (window.innerWidth <= 768) {
-                    rightBtn.style.width = '40px';
-                    rightBtn.style.height = '40px';
-                    rightBtn.style.fontSize = '1.8rem';
-                    rightBtn.style.right = '10px';
-                }
-                rightBtn.style.display = 'flex';
-                rightBtn.style.alignItems = 'center';
-                rightBtn.style.justifyContent = 'center';
-                rightBtn.style.zIndex = '2';
-                rightBtn.style.transition = 'all 0.2s ease';
-                rightBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-                rightBtn.onmouseover = function() {
-                    this.style.background = 'rgba(252,3,239,0.3)';
-                    this.style.transform = 'translateY(-50%) scale(1.1)';
-                };
-                rightBtn.onmouseout = function() {
-                    this.style.background = 'rgba(0,0,0,0.7)';
-                    this.style.transform = 'translateY(-50%) scale(1)';
-                };
-                rightBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    currentIdx = (currentIdx + 1) % images.length;
-                    img.src = images[currentIdx];
-                    counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                };
-                
-                imgContainer.appendChild(leftBtn);
-                imgContainer.appendChild(rightBtn);
-            }
-            
-            // إضافة الصورة للحاوية
-            imgContainer.appendChild(img);
-            
-            // عداد الصور
-            let counter = document.createElement('div');
-            counter.innerText = `${currentIdx + 1} / ${images.length}`;
-            counter.style.margin = '15px auto 0 auto';
-            counter.style.color = '#fff';
-            counter.style.fontWeight = 'bold';
-            counter.style.fontSize = '1.3rem';
-            counter.style.background = 'rgba(35,35,35,0.9)';
-            counter.style.padding = '8px 20px';
-            counter.style.borderRadius = '25px';
-            counter.style.textAlign = 'center';
-            counter.style.border = '2px solid #fc03ef';
-            counter.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-            
-            // إضافة الحاوية والعداد
-            content.appendChild(imgContainer);
-            content.appendChild(counter);
-            
-            // إغلاق عند الضغط خارج الصورة
-            modal.onclick = function(e) {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            };
-            
-            // دعم إغلاق بالضغط على Escape والتنقل بالمفاتيح
-            document.onkeydown = function(e) {
-                if (e.key === 'Escape' && document.getElementById('imageModalPopup')) {
-                    document.body.removeChild(modal);
-                } else if (images.length > 1) {
-                    if (e.key === 'ArrowLeft') {
-                        currentIdx = (currentIdx - 1 + images.length) % images.length;
-                        img.src = images[currentIdx];
-                        counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                    } else if (e.key === 'ArrowRight') {
-                        currentIdx = (currentIdx + 1) % images.length;
-                        img.src = images[currentIdx];
-                        counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                    }
-                }
-            };
-            
-            // دعم سحب لليمين/يسار على الموبايل
-            let startX = null;
-            img.ontouchstart = function(e) {
-                if (e.touches.length === 1) startX = e.touches[0].clientX;
-            };
-            img.ontouchend = function(e) {
-                if (startX !== null && e.changedTouches.length === 1) {
-                    let dx = e.changedTouches[0].clientX - startX;
-                    if (Math.abs(dx) > 50) {
-                        if (dx > 0) {
-                            // يسار
-                            if (images.length > 1) {
-                                currentIdx = (currentIdx - 1 + images.length) % images.length;
-                                img.src = images[currentIdx];
-                                counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                            }
-                        } else {
-                            // يمين
-                            if (images.length > 1) {
-                                currentIdx = (currentIdx + 1) % images.length;
-                                img.src = images[currentIdx];
-                                counter.innerText = `${currentIdx + 1} / ${images.length}`;
-                            }
-                        }
-                    }
-                }
-                startX = null;
-            };
-            
-            // أضف المحتوى للمودال
-            modal.appendChild(content);
+            modal.style.zIndex = 2000;
+            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ec35e3;'>`;
+            modal.onclick = () => document.body.removeChild(modal);
             document.body.appendChild(modal);
         }
         // --- حساب نسبة الخصم ---
@@ -1000,12 +796,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
                     }
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
@@ -1057,7 +853,7 @@
             let current = parseInt(img.getAttribute('data-slider-idx')) || 0;
             current = (current + dir + prod.images.length) % prod.images.length;
             img.src = prod.images[current];
-            img.setAttribute('onclick', `showImageModal('${prod.images[current]}', ${JSON.stringify(prod.images)}, ${current})`);
+            img.setAttribute('onclick', `showImageModal("${prod.images[current]}")`);
             img.setAttribute('data-slider-idx', current);
         }
         window.showImageModal = showImageModal;
@@ -1842,12 +1638,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer; colo' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer; colo' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}", ${JSON.stringify(prod.images)}, 0)'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
                     }
                     let fav = isFavorite(prod);
                     let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
