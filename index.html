@@ -780,6 +780,11 @@
             content.style.maxHeight = '90vh';
             content.style.margin = '0 auto';
             
+            // حاوية الصورة مع الأزرار
+            let imgContainer = document.createElement('div');
+            imgContainer.style.position = 'relative';
+            imgContainer.style.display = 'inline-block';
+            
             // الصورة
             let img = document.createElement('img');
             img.src = images[currentIdx];
@@ -797,23 +802,23 @@
                 let leftBtn = document.createElement('button');
                 leftBtn.innerHTML = '‹';
                 leftBtn.style.position = 'absolute';
-                leftBtn.style.left = '-60px';
+                leftBtn.style.left = '15px';
                 leftBtn.style.top = '50%';
                 leftBtn.style.transform = 'translateY(-50%)';
-                leftBtn.style.background = 'rgba(34,34,34,0.9)';
+                leftBtn.style.background = 'rgba(0,0,0,0.7)';
                 leftBtn.style.color = '#fc03ef';
                 leftBtn.style.border = '2px solid #fc03ef';
-                leftBtn.style.fontSize = '2.8rem';
+                leftBtn.style.fontSize = '2.5rem';
                 leftBtn.style.cursor = 'pointer';
                 leftBtn.style.borderRadius = '50%';
-                leftBtn.style.width = '60px';
-                leftBtn.style.height = '60px';
+                leftBtn.style.width = '50px';
+                leftBtn.style.height = '50px';
                 // تحسين للأجهزة الصغيرة
                 if (window.innerWidth <= 768) {
-                    leftBtn.style.left = '-40px';
-                    leftBtn.style.width = '50px';
-                    leftBtn.style.height = '50px';
-                    leftBtn.style.fontSize = '2.2rem';
+                    leftBtn.style.width = '40px';
+                    leftBtn.style.height = '40px';
+                    leftBtn.style.fontSize = '1.8rem';
+                    leftBtn.style.left = '10px';
                 }
                 leftBtn.style.display = 'flex';
                 leftBtn.style.alignItems = 'center';
@@ -822,11 +827,11 @@
                 leftBtn.style.transition = 'all 0.2s ease';
                 leftBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
                 leftBtn.onmouseover = function() {
-                    this.style.background = 'rgba(252,3,239,0.2)';
+                    this.style.background = 'rgba(252,3,239,0.3)';
                     this.style.transform = 'translateY(-50%) scale(1.1)';
                 };
                 leftBtn.onmouseout = function() {
-                    this.style.background = 'rgba(34,34,34,0.9)';
+                    this.style.background = 'rgba(0,0,0,0.7)';
                     this.style.transform = 'translateY(-50%) scale(1)';
                 };
                 leftBtn.onclick = function(e) {
@@ -839,23 +844,23 @@
                 let rightBtn = document.createElement('button');
                 rightBtn.innerHTML = '›';
                 rightBtn.style.position = 'absolute';
-                rightBtn.style.right = '-60px';
+                rightBtn.style.right = '15px';
                 rightBtn.style.top = '50%';
                 rightBtn.style.transform = 'translateY(-50%)';
-                rightBtn.style.background = 'rgba(34,34,34,0.9)';
+                rightBtn.style.background = 'rgba(0,0,0,0.7)';
                 rightBtn.style.color = '#fc03ef';
                 rightBtn.style.border = '2px solid #fc03ef';
-                rightBtn.style.fontSize = '2.8rem';
+                rightBtn.style.fontSize = '2.5rem';
                 rightBtn.style.cursor = 'pointer';
                 rightBtn.style.borderRadius = '50%';
-                rightBtn.style.width = '60px';
-                rightBtn.style.height = '60px';
+                rightBtn.style.width = '50px';
+                rightBtn.style.height = '50px';
                 // تحسين للأجهزة الصغيرة
                 if (window.innerWidth <= 768) {
-                    rightBtn.style.right = '-40px';
-                    rightBtn.style.width = '50px';
-                    rightBtn.style.height = '50px';
-                    rightBtn.style.fontSize = '2.2rem';
+                    rightBtn.style.width = '40px';
+                    rightBtn.style.height = '40px';
+                    rightBtn.style.fontSize = '1.8rem';
+                    rightBtn.style.right = '10px';
                 }
                 rightBtn.style.display = 'flex';
                 rightBtn.style.alignItems = 'center';
@@ -864,11 +869,11 @@
                 rightBtn.style.transition = 'all 0.2s ease';
                 rightBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
                 rightBtn.onmouseover = function() {
-                    this.style.background = 'rgba(252,3,239,0.2)';
+                    this.style.background = 'rgba(252,3,239,0.3)';
                     this.style.transform = 'translateY(-50%) scale(1.1)';
                 };
                 rightBtn.onmouseout = function() {
-                    this.style.background = 'rgba(34,34,34,0.9)';
+                    this.style.background = 'rgba(0,0,0,0.7)';
                     this.style.transform = 'translateY(-50%) scale(1)';
                 };
                 rightBtn.onclick = function(e) {
@@ -878,9 +883,12 @@
                     counter.innerText = `${currentIdx + 1} / ${images.length}`;
                 };
                 
-                content.appendChild(leftBtn);
-                content.appendChild(rightBtn);
+                imgContainer.appendChild(leftBtn);
+                imgContainer.appendChild(rightBtn);
             }
+            
+            // إضافة الصورة للحاوية
+            imgContainer.appendChild(img);
             
             // عداد الصور
             let counter = document.createElement('div');
@@ -896,8 +904,8 @@
             counter.style.border = '2px solid #fc03ef';
             counter.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
             
-            // إضافة الصورة والعداد
-            content.appendChild(img);
+            // إضافة الحاوية والعداد
+            content.appendChild(imgContainer);
             content.appendChild(counter);
             
             // إغلاق عند الضغط خارج الصورة
