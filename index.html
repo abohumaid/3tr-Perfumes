@@ -757,7 +757,7 @@
             modal.style.alignItems = 'center';
             modal.style.justifyContent = 'center';
             modal.style.zIndex = 2000;
-            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ec35e3;'>`;
+            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ec35e3;z-index:20000000000;'>`;
             modal.onclick = () => document.body.removeChild(modal);
             document.body.appendChild(modal);
         }
