@@ -587,8 +587,47 @@
             color: #fff;
         }
     </style>
+    <style>
+        /* لمعة متحركة على عناصر الناف بار عند الوقوف */
+        .navbar li {
+            position: relative;
+            overflow: hidden;
+        }
+        .navbar li .shine {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            background: linear-gradient(120deg, transparent 0%, #fff8 40%, #fff 50%, #fff8 60%, transparent 100%);
+            transform: translateX(-100%);
+            animation: shine-move 1.2s linear infinite;
+            z-index: 2;
+            display: none;
+        }
+        .navbar li.active .shine {
+            animation-play-state: running;
+            display: block;
+        }
+        @keyframes shine-move {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Loader Icon (under navbar) -->
+    <div id="mainLoader" style="position:absolute;z-index:9000;top:110px;left:0;width:100vw;height:calc(100vh - 110px);background:rgba(255,255,255,0.95);display:none;align-items:center;justify-content:center;transition:opacity 0.4s;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="loader-spinner" style="border:6px solid #e0e0e0;border-top:6px solid #784fe7;border-radius:50%;width:70px;height:70px;animation:spin 1s linear infinite;"></div>
+            <div style="margin-top:18px;font-size:1.2rem;color:#784fe7;font-weight:bold;">جاري تحميل المنتجات...</div>
+        </div>
+    </div>
+    <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+    <!-- نهاية أيقونة التحميل -->
     <!-- Splash Screen -->
     <div id="splashScreen" style="position:fixed;z-index:20000;top:0;left:0;width:100vw;height:100vh;background:#faf9f6;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 0.4s;">
         <img id="splashLogo" src="icon1.png" alt="Logo" style="width:120px;height:120px;" />
@@ -735,6 +774,12 @@
                 renderProductsSection(activeSection);
                 // إذا كنا في لوحة الأدمن، حدث القائمة
                 if (document.getElementById('adminProductsList')) renderAdminProductsList();
+                // إخفاء اللودر بعد أول تحميل للمنتجات
+                const loader = document.getElementById('mainLoader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(()=>{ loader.style.display = 'none'; }, 400);
+                }
             });
         }
         listenToProducts();
@@ -745,7 +790,9 @@
         }
 
         // --- سلايدر الصور وتكبيرها ---
-        function showImageModal(src) {
+        function showImageModalForProduct(prod, startIdx = 0) {
+            if (!prod.images || !prod.images.length) return;
+            let currentIdx = startIdx;
             let modal = document.createElement('div');
             modal.style.position = 'fixed';
             modal.style.top = 0;
@@ -756,20 +803,49 @@
             modal.style.display = 'flex';
             modal.style.alignItems = 'center';
             modal.style.justifyContent = 'center';
-            modal.style.zIndex = 2000;
-            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ec35e3;'>`;
-            modal.onclick = () => document.body.removeChild(modal);
+            modal.style.zIndex = 99999;
+            // بناء أزرار التقليب فقط إذا كان هناك أكثر من صورة
+            let arrowsHtml = '';
+            if (prod.images.length > 1) {
+                arrowsHtml = `
+                    <button id="prevImgBtn" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:#fff8;border:none;border-radius:50%;width:38px;height:38px;font-size:2rem;cursor:pointer;z-index:10;opacity:0.85;">‹</button>
+                    <button id="nextImgBtn" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#fff8;border:none;border-radius:50%;width:38px;height:38px;font-size:2rem;cursor:pointer;z-index:10;opacity:0.85;">›</button>
+                `;
+            }
+            modal.innerHTML = `
+                <div id="modalImageSlider" style="position:relative;display:flex;flex-direction:column;align-items:center;">
+                    <button id="closeModalBtn" style="position:absolute;top:-30px;right:0;background:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:1.3rem;cursor:pointer;z-index:10;">×</button>
+                    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+                        <img id="modalImg" src="${prod.images[currentIdx]}" style="max-width:80vw;max-height:70vh;border-radius:12px;border:4px solid #ec35e3;box-shadow:0 2px 16px #0007;" />
+                        ${arrowsHtml}
+                    </div>
+                    <div id="imgCounter" style="margin-top:18px;color:#fff;font-size:1.2rem;font-weight:bold;text-shadow:0 2px 8px #000;">${currentIdx+1}/${prod.images.length}</div>
+                </div>
+            `;
+            // إغلاق عند الضغط خارج الصورة أو زر الإغلاق
+            modal.onclick = function(e) {
+                if (e.target === modal || e.target.id === 'closeModalBtn') document.body.removeChild(modal);
+            };
             document.body.appendChild(modal);
+            // أزرار التقليب فقط إذا كان أكثر من صورة
+            if (prod.images.length > 1) {
+                const updateImg = () => {
+                    modal.querySelector('#modalImg').src = prod.images[currentIdx];
+                    modal.querySelector('#imgCounter').innerText = `${currentIdx+1}/${prod.images.length}`;
+                };
+                modal.querySelector('#prevImgBtn').onclick = function(e) {
+                    e.stopPropagation();
+                    currentIdx = (currentIdx - 1 + prod.images.length) % prod.images.length;
+                    updateImg();
+                };
+                modal.querySelector('#nextImgBtn').onclick = function(e) {
+                    e.stopPropagation();
+                    currentIdx = (currentIdx + 1) % prod.images.length;
+                    updateImg();
+                };
+            }
         }
-        // --- حساب نسبة الخصم ---
-        function getDiscountPercent(before, after) {
-            before = parseFloat(before); after = parseFloat(after);
-            if(!before || !after || after >= before) return '';
-            return Math.round(100 * (before - after) / before);
-        }
-        // تحديث التخزين المحلي
-        // لم يعد هناك حاجة لـ localStorage، سنستخدم saveProductsToDB بدلاً منها
-        // --- تعديل عرض المنتجات لإظهار القلب ---
+        // --- تعديل عرض المنتجات لإرسال بيانات المنتج عند الضغط على الصورة ---
         function renderProductsSection(typeKey) {
             const container = document.getElementById('mainContainer');
             const type = productTypes.find(t => t.key === typeKey);
@@ -796,12 +872,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
                     }
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
@@ -856,7 +932,13 @@
             img.setAttribute('onclick', `showImageModal("${prod.images[current]}")`);
             img.setAttribute('data-slider-idx', current);
         }
-        window.showImageModal = showImageModal;
+        window.showImageModalForProduct = showImageModalForProduct;
+        // --- حساب نسبة الخصم ---
+        function getDiscountPercent(before, after) {
+            before = parseFloat(before); after = parseFloat(after);
+            if(!before || !after || after >= before) return '';
+            return Math.round(100 * (before - after) / before);
+        }
         // نافذة تسجيل دخول الأدمن
         function showAdminLogin() {
             document.getElementById('adminLoginModal').style.display = 'flex';
@@ -1268,6 +1350,7 @@
         window.addEventListener('DOMContentLoaded', function() {
             const splash = document.getElementById('splashScreen');
             const logo = document.getElementById('splashLogo');
+            const loader = document.getElementById('mainLoader');
             if (splash && logo) {
                 // Step 1: Shake
                 logo.style.animation = 'shake 0.7s cubic-bezier(.36,.07,.19,.97) both';
@@ -1279,6 +1362,11 @@
                         splash.style.opacity = '0';
                         setTimeout(() => {
                             splash.style.display = 'none';
+                            // بعد اختفاء اللوجو، أظهر اللودر
+                            if(loader) {
+                                loader.style.display = 'flex';
+                                loader.style.opacity = '1';
+                            }
                         }, 400);
                     }, 900);
                 }, 700);
@@ -1822,6 +1910,17 @@
                     if (typeof showAdminLogin === 'function') showAdminLogin();
                 };
             }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.navbar li[data-section]').forEach(function(li) {
+                if (!li.querySelector('.shine')) {
+                    var shine = document.createElement('span');
+                    shine.className = 'shine';
+                    li.appendChild(shine);
+                }
+            });
         });
     </script>
 </body>
