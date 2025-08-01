@@ -875,12 +875,12 @@
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
-                        slider = `<img src='${prod.images[0] || ''}' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
                     }
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
