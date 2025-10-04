@@ -720,7 +720,7 @@
                     setTimeout(function() {
                         loader.style.display = 'none';
                     }, 400); // نفس مدة transition
-                }, 5000); // 3 ثواني
+                }, 3000); // 3 ثواني
             }
         });
         // --- Firebase config ---
@@ -880,32 +880,37 @@
             let html = `<div class='section-title'>${type ? type.label : ''}</div>`;
             if(filtered.length === 0) {
                 html += `<div style='text-align:center;'>No products in this section yet.</div>`;
-            } else {
-                html += `<div class='products-grid'>`;
-                filtered.forEach((prod, idx) => {
-                    const fadeDelay = idx * 60; // 60ms لكل بطاقة
-                    // سلايدر صور
-                    let slider = '';
-                    if(prod.images && prod.images.length > 1) {
-                        slider = `
+                container.innerHTML = html;
+                return;
+            }
+            // --- عرض أول 4 منتجات فورًا ---
+            let initialCount = 2;
+            let shown = Math.min(initialCount, filtered.length);
+            html += `<div class='products-grid' id='productsGrid'></div>`;
+            container.innerHTML = html;
+            const grid = document.getElementById('productsGrid');
+            // دالة توليد كود المنتج (نفس الكود السابق)
+            function productCardHtml(prod, idx) {
+                const fadeDelay = idx * 60; // 60ms لكل بطاقة
+                let slider = '';
+                if(prod.images && prod.images.length > 1) {
+                    slider = `
                         <div class='img-slider' style='position:relative;'>
                             <img src='${prod.images[0]}' loading='lazy' class='slider-img' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)' data-slider-idx='0' data-prod-idx='${idx}'>
                             <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
-                    } else {
-                        slider = `<img src='${prod.images[0] || ''}' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
-                    }
-                    // نسبة الخصم
-                    let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
-                    let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
-                    // القلب
-                    let fav = isFavorite(prod);
-                    let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
+                } else {
+                    slider = `<img src='${prod.images[0] || ''}' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
+                }
+                let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
+                let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
+                let fav = isFavorite(prod);
+                let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
                         <svg width='32' height='32' viewBox='0 0 24 24' fill='${fav ? "#ff4444" : "none"}' stroke='#ff4444' stroke-width='2'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/></svg>
                     </button>`;
-                    let availableHtml = (prod.available === false) ? `<div style='color:#ff4444;font-weight:bold;margin-top:6px;'>غير متوفر</div>` : '';
-                    html += `
+                let availableHtml = (prod.available === false) ? `<div style='color:#ff4444;font-weight:bold;margin-top:6px;'>غير متوفر</div>` : '';
+                return `
                     <div class='product-card' style='overflow:visible; --fade-delay:${fadeDelay}ms;'>
                         <div style='position:relative;'>
                             ${slider}
@@ -921,11 +926,28 @@
                         </div>
                         ${(prod.available === false) ? '' : `<button class='add-to-cart-btn' onclick='addToCart(${JSON.stringify(prod)})' style='background:#25d366;color:#fff;font-weight:bold;padding:8px 0;border-radius:6px;width:100%;margin-top:8px;font-size:1.1rem;cursor:pointer;border:none;'>إضافة إلى السلة</button>`}
                     </div>
-                    `;
-                });
-                html += `</div>`;
+                `;
             }
-            container.innerHTML = html;
+            // عرض أول 4 منتجات فورًا
+            for(let i=0; i<shown; i++) {
+                grid.insertAdjacentHTML('beforeend', productCardHtml(filtered[i], i));
+            }
+            // --- إظهار باقي المنتجات تدريجيًا ---
+            if(filtered.length > initialCount) {
+                let nextIdx = initialCount;
+                function showNextBatch() {
+                    let batch = 4;
+                    let end = Math.min(nextIdx + batch, filtered.length);
+                    for(let i=nextIdx; i<end; i++) {
+                        grid.insertAdjacentHTML('beforeend', productCardHtml(filtered[i], i));
+                    }
+                    nextIdx = end;
+                    if(nextIdx < filtered.length) {
+                        setTimeout(showNextBatch, 300);
+                    }
+                }
+                setTimeout(showNextBatch, 300);
+            }
         }
         // --- سلايدر الصور ---
         window.changeSlide = function(btn, filteredIdx, dir) {
@@ -985,7 +1007,7 @@
         document.getElementById('adminLoginBtn').onclick = function() {
             const user = document.getElementById('adminUsername').value.trim();
             const pass = document.getElementById('adminPassword').value.trim();
-            if(user === 'ahmed' && pass === '01159768514') {
+            if(user === 'ahmed' && pass === '0000') {
                 hideAdminLogin();
                 renderAdminPanel();
             } else {
@@ -1447,7 +1469,7 @@
                     <img src='${(item.images && item.images[0]) ? item.images[0] : ''}' style='width:80px;height:80px;object-fit:cover;border-radius:8px;margin-left:12px;'>
                     <div class='product-info' style='flex:1;'>
                         <div class='product-title'>${item.name}</div>
-                        <!-- حذف وصف المنتج من السلة فقط -->
+                        <div class='product-desc'>${item.desc}</div>
                         <div class='product-type'>${item.type}</div>
                         <div class='product-prices'><span>${item.priceAfter} L.E</span></div>
                     </div>
