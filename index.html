@@ -884,7 +884,7 @@
                 return;
             }
             // --- عرض أول 4 منتجات فورًا ---
-            let initialCount = 1;
+            let initialCount = filtered.length; // عرض كل المنتجات فورًا بدون delay
             let shown = Math.min(initialCount, filtered.length);
             html += `<div class='products-grid' id='productsGrid'></div>`;
             container.innerHTML = html;
@@ -906,7 +906,7 @@
                 let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
                 let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
                 let fav = isFavorite(prod);
-                let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
+                let heartBtn = `<button onclick='window.toggleFavorite("${prod.name.replace(/\"/g, '&quot;')}", "${prod.type}")' style='position:absolute;top:6px;right:0;background:none;border:none;cursor:pointer;z-index:10;'>
                         <svg width='32' height='32' viewBox='0 0 24 24' fill='${fav ? "#ff4444" : "none"}' stroke='#ff4444' stroke-width='2'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/></svg>
                     </button>`;
                 let availableHtml = (prod.available === false) ? `<div style='color:#ff4444;font-weight:bold;margin-top:6px;'>غير متوفر</div>` : '';
@@ -928,8 +928,8 @@
                     </div>
                 `;
             }
-            // عرض أول 4 منتجات فورًا
-            for(let i=0; i<shown; i++) {
+            // عرض جميع المنتجات دفعة واحدة
+            for(let i=0; i<filtered.length; i++) {
                 grid.insertAdjacentHTML('beforeend', productCardHtml(filtered[i], i));
             }
             // --- إظهار باقي المنتجات تدريجيًا ---
