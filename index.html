@@ -779,13 +779,9 @@
         // جلب المنتجات من قاعدة البيانات وتحديثها تلقائياً
         function listenToProducts() {
             db.ref('gymProducts').on('value', snapshot => {
-                const val = snapshot.val() || [];
-                // إذا كانت البيانات ككائن (مفتاح تلقائي)، حولها لمصفوفة
-                if (!Array.isArray(val)) {
-                    products = Object.values(val);
-                } else {
-                    products = val;
-                }
+                const val = snapshot.val() || {};
+                // البيانات ستكون ككائن (id -> product)
+                products = Object.values(val);
                 // إعادة عرض القسم الحالي
                 const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'man';
                 renderProductsSection(activeSection);
@@ -901,7 +897,10 @@
                             <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#fc03efff;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                 } else {
-                    slider = `<img src='${prod.images[0] || ''}' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`;
+                    // إذا كان هناك صورة واحدة فقط أو مصفوفة الصور غير معرفة أو فارغة
+                    let imgSrc = (prod.images && prod.images.length > 0) ? prod.images[0] : '';
+                    slider = imgSrc ? `<img src='${imgSrc}' loading='lazy' style='cursor:pointer;' onclick='window.showImageModalForProduct(products[${products.indexOf(prod)}],0)'>`
+                                    : `<div style='width:180px;height:180px;background:#f0f0f0;border-radius:8px;border:2px solid #eec9d2;display:flex;align-items:center;justify-content:center;color:#ccc;'>No Image</div>`;
                 }
                 let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
                 let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
@@ -1165,15 +1164,15 @@
             editingProductIndex = editIndex;
             let prod = {name:'', desc:'', images:[], priceBefore:'', priceAfter:'', type:productTypes[0].key, available:true};
             if(editIndex !== null) prod = products[editIndex];
-            // متغير للاحتفاظ بكل الصور الحالية والجديدة
+            // متغير للاحتفاظ بروابط الصور
             let currentImages = prod.images ? [...prod.images] : [];
-            let html = `<form  class='product-form' id='productForm'>
+            let html = `<form class='product-form' id='productForm'>
                 <label>Product Name</label>
                 <input type='text' name='name' value='${prod.name || ''}' required>
                 <label>Description</label>
                 <textarea name='desc' rows='2' required>${prod.desc || ''}</textarea>
-                <label>Product Images</label>
-                <input type='file' name='images' accept='image/*' multiple ${editIndex!==null?'':'required'}>
+                <label>Image Links (one per line)</label>
+                <textarea name='imageLinks' rows='3' placeholder='ضع كل لينك صورة في سطر منفصل' required>${currentImages.join('\n')}</textarea>
                 <div id='previewImages' style='display:flex;gap:8px;margin-bottom:8px;'></div>
                 <label>Price Before Discount</label>
                 <input type='number' name='priceBefore' value='${prod.priceBefore || ''}' required>
@@ -1196,31 +1195,21 @@
             if(currentImages.length) {
                 showPreviewImages(currentImages);
             }
-            // معاينة الصور الجديدة وإضافتها للقديمة
-            document.querySelector('#productForm input[name="images"]').onchange = function(e) {
-                const files = Array.from(e.target.files);
-                if(files.length) {
-                    const readers = files.map(file => {
-                        return new Promise(res => {
-                            const reader = new FileReader();
-                            reader.onload = ev => res(ev.target.result);
-                            reader.readAsDataURL(file);
-                        });
-                    });
-                    Promise.all(readers).then(imgs => {
-                        currentImages = currentImages.concat(imgs);
-                        showPreviewImages(currentImages);
-                    });
-                }
-            };
+            // معاينة الصور عند تغيير الروابط
+            document.querySelector('#productForm textarea[name="imageLinks"]').addEventListener('input', function(e) {
+                const links = this.value.split('\n').map(x=>x.trim()).filter(Boolean);
+                currentImages = links;
+                showPreviewImages(currentImages);
+            });
             // معالجة الإرسال
             document.getElementById('productForm').onsubmit = function(e) {
                 e.preventDefault();
                 const fd = new FormData(this);
+                let images = fd.get('imageLinks').split('\n').map(x=>x.trim()).filter(Boolean);
                 let newProd = {
                     name: fd.get('name'),
                     desc: fd.get('desc'),
-                    images: currentImages,
+                    images: images,
                     priceBefore: fd.get('priceBefore'),
                     priceAfter: fd.get('priceAfter'),
                     type: fd.get('type'),
@@ -1244,22 +1233,34 @@
             });
         }
         function hideProductForm() {
-            document.getElementById('productFormContainer').innerHTML = '';
+            var el = document.getElementById('productFormContainer');
+            if (el) el.innerHTML = '';
         }
         function saveProductData(prod) {
             if(editingProductIndex !== null) {
+                // تعديل منتج: حدث المصفوفة واحفظها كاملة
                 products[editingProductIndex] = prod;
+                saveProductsToDB();
                 editingProductIndex = null;
+                hideProductForm();
+                renderAdminProductsList();
             } else {
-                products.push(prod);
+                // إضافة منتج جديد: استخدم push في Firebase
+                db.ref('gymProducts').push(prod, function(error) {
+                    if (!error) {
+                        hideProductForm();
+                        // إعادة تحميل المنتجات من القاعدة
+                        listenToProducts();
+                    } else {
+                        alert('حدث خطأ أثناء حفظ المنتج!');
+                    }
+                });
             }
-            saveProductsToDB();
-            hideProductForm();
-            renderAdminProductsList();
         }
         // عرض المنتجات في لوحة الأدمن
         function renderAdminProductsList() {
             const list = document.getElementById('adminProductsList');
+            if (!list) return;
             if(!products.length) {
                 list.innerHTML = '<div style="text-align:center;">No products yet.</div>';
                 return;
